@@ -6,12 +6,24 @@ const invoicesFile = path.join(
   "../data/invoices.json"
 );
 
+const counterFile = path.join(
+  __dirname,
+  "../data/counter.json"
+);
+
+// ==============================
+// INVOICE FILE FUNCTIONS
+// ==============================
+
 const readInvoices = () => {
   if (!fs.existsSync(invoicesFile)) {
     fs.writeFileSync(invoicesFile, "[]");
   }
 
-  const data = fs.readFileSync(invoicesFile, "utf-8");
+  const data = fs.readFileSync(
+    invoicesFile,
+    "utf-8"
+  );
 
   return data ? JSON.parse(data) : [];
 };
@@ -23,24 +35,138 @@ const saveInvoices = (invoices) => {
   );
 };
 
-const getNextInvoiceNumber = (invoices) => {
-  if (invoices.length === 0) {
-    return "KN-000001";
+// ==============================
+// COUNTER FUNCTIONS
+// ==============================
+
+const readCounter = () => {
+  if (!fs.existsSync(counterFile)) {
+    fs.writeFileSync(
+      counterFile,
+      JSON.stringify(
+        {
+          currentNumber: 800
+        },
+        null,
+        2
+      )
+    );
   }
 
-  const numbers = invoices
-    .map((invoice) => {
-      const number = invoice.invoiceNumber.replace("KN-", "");
-      return parseInt(number, 10);
-    })
-    .filter((number) => !isNaN(number));
+  const data = fs.readFileSync(
+    counterFile,
+    "utf-8"
+  );
 
-  const latestNumber = Math.max(...numbers);
-
-  return `KN-${String(latestNumber + 1).padStart(6, "0")}`;
+  return data
+    ? JSON.parse(data)
+    : { currentNumber: 800 };
 };
 
+const saveCounter = (counter) => {
+  fs.writeFileSync(
+    counterFile,
+    JSON.stringify(counter, null, 2)
+  );
+};
+
+// ==============================
+// FORMAT INVOICE NUMBER
+// ==============================
+
+const formatInvoiceNumber = (number) => {
+  return `INVOICE-${String(number).padStart(
+    4,
+    "0"
+  )}`;
+};
+
+// ==============================
+// GET CURRENT INVOICE NUMBER
+// ==============================
+
+const getCurrentInvoiceNumber = (req, res) => {
+  try {
+    const counter = readCounter();
+
+    res.json({
+      currentNumber: counter.currentNumber,
+      invoiceNumber: formatInvoiceNumber(
+        counter.currentNumber
+      )
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message:
+        "Failed to get current invoice number"
+    });
+  }
+};
+
+// ==============================
+// UPDATE CURRENT INVOICE NUMBER
+// ==============================
+
+const updateCurrentInvoiceNumber = (
+  req,
+  res
+) => {
+  try {
+    const { number } = req.body;
+
+    const newNumber = Number(number);
+
+    if (
+      !Number.isInteger(newNumber) ||
+      newNumber < 1
+    ) {
+      return res.status(400).json({
+        message:
+          "Invoice number must be a positive number"
+      });
+    }
+
+    const counter = readCounter();
+
+    const difference =
+      newNumber - counter.currentNumber;
+
+    // Maximum change is +5 or -5
+    if (Math.abs(difference) > 5) {
+      return res.status(400).json({
+        message:
+          "You can change the invoice number by maximum 5 at a time"
+      });
+    }
+
+    counter.currentNumber = newNumber;
+
+    saveCounter(counter);
+
+    res.json({
+      message:
+        "Invoice number updated successfully",
+      currentNumber: counter.currentNumber,
+      invoiceNumber: formatInvoiceNumber(
+        counter.currentNumber
+      )
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message:
+        "Failed to update invoice number"
+    });
+  }
+};
+
+// ==============================
 // CREATE INVOICE
+// ==============================
+
 const createInvoice = (req, res) => {
   try {
     const {
@@ -56,84 +182,145 @@ const createInvoice = (req, res) => {
 
     if (!customerName) {
       return res.status(400).json({
-        message: "Customer name is required"
+        message:
+          "Customer name is required"
       });
     }
 
     if (!items || items.length === 0) {
       return res.status(400).json({
-        message: "At least one invoice item is required"
+        message:
+          "At least one invoice item is required"
       });
     }
 
     const invoices = readInvoices();
 
-    const invoiceNumber = getNextInvoiceNumber(invoices);
+    // Get current counter
+    const counter = readCounter();
 
-    const calculatedItems = items.map((item) => {
-      const quantity = Number(item.quantity);
-      const price = Number(item.price);
+    // Generate invoice number
+    const invoiceNumber =
+      formatInvoiceNumber(
+        counter.currentNumber
+      );
 
-      return {
-        description: item.description,
-        quantity,
-        price,
-        total: quantity * price
-      };
-    });
+    // Calculate items
+    const calculatedItems = items.map(
+      (item) => {
+        const quantity =
+          Number(item.quantity);
 
-    const subtotal = calculatedItems.reduce(
-      (sum, item) => sum + item.total,
-      0
+        const price =
+          Number(item.price);
+
+        return {
+          description:
+            item.description,
+          quantity,
+          price,
+          total:
+            quantity * price
+        };
+      }
     );
 
-    const discountAmount = Number(discount) || 0;
-    const taxAmount = Number(tax) || 0;
+    // Subtotal
+    const subtotal =
+      calculatedItems.reduce(
+        (sum, item) =>
+          sum + item.total,
+        0
+      );
+
+    const discountAmount =
+      Number(discount) || 0;
+
+    const taxAmount =
+      Number(tax) || 0;
 
     const total =
-      subtotal - discountAmount + taxAmount;
+      subtotal -
+      discountAmount +
+      taxAmount;
 
     const newInvoice = {
       id: Date.now().toString(),
+
       invoiceNumber,
+
       customerName,
-      customerEmail: customerEmail || "",
-      customerPhone: customerPhone || "",
-      customerAddress: customerAddress || "",
+
+      customerEmail:
+        customerEmail || "",
+
+      customerPhone:
+        customerPhone || "",
+
+      customerAddress:
+        customerAddress || "",
+
       invoiceDate:
-        invoiceDate || new Date().toISOString(),
+        invoiceDate ||
+        new Date().toISOString(),
+
       items: calculatedItems,
+
       subtotal,
-      discount: discountAmount,
-      tax: taxAmount,
+
+      discount:
+        discountAmount,
+
+      tax:
+        taxAmount,
+
       total,
-      createdBy: req.user.userId,
-      createdAt: new Date().toISOString()
+
+      createdBy:
+        req.user.userId,
+
+      createdAt:
+        new Date().toISOString()
     };
 
     invoices.push(newInvoice);
 
     saveInvoices(invoices);
 
-    res.status(201).json(newInvoice);
+    // Increase invoice number
+    counter.currentNumber =
+      counter.currentNumber + 1;
+
+    saveCounter(counter);
+
+    res.status(201).json(
+      newInvoice
+    );
   } catch (error) {
     console.error(error);
 
     res.status(500).json({
-      message: "Failed to create invoice"
+      message:
+        "Failed to create invoice"
     });
   }
 };
 
+// ==============================
 // GET ALL INVOICES
+// ==============================
+
 const getInvoices = (req, res) => {
   try {
-    const invoices = readInvoices();
+    const invoices =
+      readInvoices();
 
-    const userInvoices = invoices.filter(
-      (invoice) =>
-        invoice.createdBy === req.user.userId
-    );
+    const userInvoices =
+      invoices.filter(
+        (invoice) =>
+          invoice.createdBy ===
+          req.user.userId
+      );
 
     userInvoices.sort(
       (a, b) =>
@@ -143,83 +330,79 @@ const getInvoices = (req, res) => {
 
     res.json(userInvoices);
   } catch (error) {
+    console.error(error);
+
     res.status(500).json({
-      message: "Failed to get invoices"
+      message:
+        "Failed to get invoices"
     });
   }
 };
 
+// ==============================
 // GET SINGLE INVOICE
-const getInvoiceById = (req, res) => {
-  try {
-    const invoices = readInvoices();
+// ==============================
 
-    const invoice = invoices.find(
-      (invoice) =>
-        invoice.id === req.params.id &&
-        invoice.createdBy === req.user.userId
-    );
+const getInvoiceById = (
+  req,
+  res
+) => {
+  try {
+    const invoices =
+      readInvoices();
+
+    const invoice =
+      invoices.find(
+        (invoice) =>
+          invoice.id ===
+            req.params.id &&
+          invoice.createdBy ===
+            req.user.userId
+      );
 
     if (!invoice) {
       return res.status(404).json({
-        message: "Invoice not found"
+        message:
+          "Invoice not found"
       });
     }
 
     res.json(invoice);
   } catch (error) {
+    console.error(error);
+
     res.status(500).json({
-      message: "Failed to get invoice"
+      message:
+        "Failed to get invoice"
     });
   }
 };
 
-// DELETE INVOICE
-const deleteInvoice = (req, res) => {
-  try {
-    const invoices = readInvoices();
-
-    const invoiceIndex = invoices.findIndex(
-      (invoice) =>
-        invoice.id === req.params.id &&
-        invoice.createdBy === req.user.userId
-    );
-
-    if (invoiceIndex === -1) {
-      return res.status(404).json({
-        message: "Invoice not found"
-      });
-    }
-
-    invoices.splice(invoiceIndex, 1);
-
-    saveInvoices(invoices);
-
-    res.json({
-      message: "Invoice deleted successfully"
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to delete invoice"
-    });
-  }
-};
-
-
+// ==============================
 // UPDATE INVOICE
-const updateInvoice = (req, res) => {
-  try {
-    const invoices = readInvoices();
+// ==============================
 
-    const invoiceIndex = invoices.findIndex(
-      (invoice) =>
-        invoice.id === req.params.id &&
-        invoice.createdBy === req.user.userId
-    );
+const updateInvoice = (
+  req,
+  res
+) => {
+  try {
+    const invoices =
+      readInvoices();
+
+    const invoiceIndex =
+      invoices.findIndex(
+        (invoice) =>
+          invoice.id ===
+            req.params.id &&
+          invoice.createdBy ===
+            req.user.userId
+      );
 
     if (invoiceIndex === -1) {
       return res.status(404).json({
-        message: "Invoice not found"
+        message:
+          "Invoice not found"
       });
     }
 
@@ -236,64 +419,150 @@ const updateInvoice = (req, res) => {
 
     if (!customerName) {
       return res.status(400).json({
-        message: "Customer name is required"
+        message:
+          "Customer name is required"
       });
     }
 
     if (!items || items.length === 0) {
       return res.status(400).json({
-        message: "At least one invoice item is required"
+        message:
+          "At least one invoice item is required"
       });
     }
 
-    const calculatedItems = items.map((item) => {
-      const quantity = Number(item.quantity);
-      const price = Number(item.price);
+    const calculatedItems =
+      items.map((item) => {
+        const quantity =
+          Number(item.quantity);
 
-      return {
-        description: item.description,
-        quantity,
-        price,
-        total: quantity * price
-      };
-    });
+        const price =
+          Number(item.price);
 
-    const subtotal = calculatedItems.reduce(
-      (sum, item) => sum + item.total,
-      0
-    );
+        return {
+          description:
+            item.description,
+          quantity,
+          price,
+          total:
+            quantity * price
+        };
+      });
 
-    const discountAmount = Number(discount) || 0;
-    const taxAmount = Number(tax) || 0;
+    const subtotal =
+      calculatedItems.reduce(
+        (sum, item) =>
+          sum + item.total,
+        0
+      );
+
+    const discountAmount =
+      Number(discount) || 0;
+
+    const taxAmount =
+      Number(tax) || 0;
 
     const total =
-      subtotal - discountAmount + taxAmount;
+      subtotal -
+      discountAmount +
+      taxAmount;
 
     invoices[invoiceIndex] = {
       ...invoices[invoiceIndex],
+
       customerName,
-      customerEmail: customerEmail || "",
-      customerPhone: customerPhone || "",
-      customerAddress: customerAddress || "",
+
+      customerEmail:
+        customerEmail || "",
+
+      customerPhone:
+        customerPhone || "",
+
+      customerAddress:
+        customerAddress || "",
+
       invoiceDate:
         invoiceDate ||
-        invoices[invoiceIndex].invoiceDate,
-      items: calculatedItems,
+        invoices[invoiceIndex]
+          .invoiceDate,
+
+      items:
+        calculatedItems,
+
       subtotal,
-      discount: discountAmount,
-      tax: taxAmount,
+
+      discount:
+        discountAmount,
+
+      tax:
+        taxAmount,
+
       total,
-      updatedAt: new Date().toISOString()
+
+      updatedAt:
+        new Date().toISOString()
     };
 
     saveInvoices(invoices);
 
-    res.json(invoices[invoiceIndex]);
+    res.json(
+      invoices[invoiceIndex]
+    );
   } catch (error) {
     console.error(error);
 
     res.status(500).json({
-      message: "Failed to update invoice"
+      message:
+        "Failed to update invoice"
+    });
+  }
+};
+
+// ==============================
+// DELETE INVOICE
+// ==============================
+
+const deleteInvoice = (
+  req,
+  res
+) => {
+  try {
+    const invoices =
+      readInvoices();
+
+    const invoiceIndex =
+      invoices.findIndex(
+        (invoice) =>
+          invoice.id ===
+            req.params.id &&
+          invoice.createdBy ===
+            req.user.userId
+      );
+
+    if (invoiceIndex === -1) {
+      return res.status(404).json({
+        message:
+          "Invoice not found"
+      });
+    }
+
+    invoices.splice(
+      invoiceIndex,
+      1
+    );
+
+    saveInvoices(invoices);
+
+    res.json({
+      message:
+        "Invoice deleted successfully"
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message:
+        "Failed to delete invoice"
     });
   }
 };
@@ -302,6 +571,8 @@ module.exports = {
   createInvoice,
   getInvoices,
   getInvoiceById,
-  deleteInvoice,
   updateInvoice,
+  deleteInvoice,
+  getCurrentInvoiceNumber,
+  updateCurrentInvoiceNumber
 };

@@ -12,5 +12,12 @@
     "email": "kavee2002@gmail.com",
     "password": "$2b$10$ZYLDBHN4sm78oV46Xg9vauWEu6dnWfF5AgGkuKejUtxCzRxaY0tyO",
     "createdAt": "2026-09-21T10:48:52.908Z"
+  },
+  {
+    "id": "1789991771126",
+    "name": "Nimesh Dilshan",
+    "email": "nimeshdilshan126@gmail.com",
+    "password": "$2b$10$ditIKoh2oQPWqeqvzL30sep861F1Fz3Oek//WL9bgCPmqNfGX1Fwq",
+    "createdAt": "2026-09-21T11:56:11.126Z"
   }
 ]

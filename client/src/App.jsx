@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import CreateInvoice from "./pages/CreateInvoice";
 import InvoiceHistory from "./pages/InvoiceHistory";
+import InvoiceNumber from "./pages/InvoiceNumber";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -57,6 +58,15 @@ function App() {
         />
 
         <Route
+          path="/edit-invoice/:id"
+          element={
+            <ProtectedRoute>
+              <CreateInvoice />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/invoices"
           element={
             <ProtectedRoute>
@@ -66,13 +76,13 @@ function App() {
         />
 
         <Route
-  path="/edit-invoice/:id"
-  element={
-    <ProtectedRoute>
-      <CreateInvoice />
-    </ProtectedRoute>
-  }
-/>
+          path="/invoice-number"
+          element={
+            <ProtectedRoute>
+              <InvoiceNumber />
+            </ProtectedRoute>
+          }
+        />
 
       </Routes>
     </BrowserRouter>

@@ -16,7 +16,10 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard">
+
+      {/* Header */}
       <header className="dashboard-header">
+
         <div>
           <div className="dashboard-logo">
             KN Vivid
@@ -35,12 +38,18 @@ const Dashboard = () => {
         >
           Logout
         </button>
+
       </header>
 
+      {/* Dashboard Cards */}
       <main className="dashboard-content">
+
+        {/* Create Invoice */}
         <div
           className="dashboard-card"
-          onClick={() => navigate("/create-invoice")}
+          onClick={() =>
+            navigate("/create-invoice")
+          }
         >
           <h2>Create Invoice</h2>
 
@@ -48,14 +57,23 @@ const Dashboard = () => {
             Create a new professional invoice.
           </p>
 
-          <button className="primary-button">
+          <button
+            className="primary-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate("/create-invoice");
+            }}
+          >
             Create Invoice
           </button>
         </div>
 
+        {/* Invoice History */}
         <div
           className="dashboard-card"
-          onClick={() => navigate("/invoices")}
+          onClick={() =>
+            navigate("/invoices")
+          }
         >
           <h2>Invoice History</h2>
 
@@ -63,11 +81,43 @@ const Dashboard = () => {
             View and manage your previous invoices.
           </p>
 
-          <button className="secondary-button">
+          <button
+            className="secondary-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate("/invoices");
+            }}
+          >
             View Invoices
           </button>
         </div>
+
+        {/* Invoice Number */}
+        <div
+          className="dashboard-card"
+          onClick={() =>
+            navigate("/invoice-number")
+          }
+        >
+          <h2>Invoice Number</h2>
+
+          <p>
+            View and manage the current invoice number.
+          </p>
+
+          <button
+            className="secondary-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate("/invoice-number");
+            }}
+          >
+            Manage Number
+          </button>
+        </div>
+
       </main>
+
     </div>
   );
 };
