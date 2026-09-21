@@ -65,6 +65,15 @@ function App() {
           }
         />
 
+        <Route
+  path="/edit-invoice/:id"
+  element={
+    <ProtectedRoute>
+      <CreateInvoice />
+    </ProtectedRoute>
+  }
+/>
+
       </Routes>
     </BrowserRouter>
   );

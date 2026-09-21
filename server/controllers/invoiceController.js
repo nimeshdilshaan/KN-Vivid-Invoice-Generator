@@ -205,9 +205,103 @@ const deleteInvoice = (req, res) => {
   }
 };
 
+
+// UPDATE INVOICE
+const updateInvoice = (req, res) => {
+  try {
+    const invoices = readInvoices();
+
+    const invoiceIndex = invoices.findIndex(
+      (invoice) =>
+        invoice.id === req.params.id &&
+        invoice.createdBy === req.user.userId
+    );
+
+    if (invoiceIndex === -1) {
+      return res.status(404).json({
+        message: "Invoice not found"
+      });
+    }
+
+    const {
+      customerName,
+      customerEmail,
+      customerPhone,
+      customerAddress,
+      invoiceDate,
+      items,
+      discount,
+      tax
+    } = req.body;
+
+    if (!customerName) {
+      return res.status(400).json({
+        message: "Customer name is required"
+      });
+    }
+
+    if (!items || items.length === 0) {
+      return res.status(400).json({
+        message: "At least one invoice item is required"
+      });
+    }
+
+    const calculatedItems = items.map((item) => {
+      const quantity = Number(item.quantity);
+      const price = Number(item.price);
+
+      return {
+        description: item.description,
+        quantity,
+        price,
+        total: quantity * price
+      };
+    });
+
+    const subtotal = calculatedItems.reduce(
+      (sum, item) => sum + item.total,
+      0
+    );
+
+    const discountAmount = Number(discount) || 0;
+    const taxAmount = Number(tax) || 0;
+
+    const total =
+      subtotal - discountAmount + taxAmount;
+
+    invoices[invoiceIndex] = {
+      ...invoices[invoiceIndex],
+      customerName,
+      customerEmail: customerEmail || "",
+      customerPhone: customerPhone || "",
+      customerAddress: customerAddress || "",
+      invoiceDate:
+        invoiceDate ||
+        invoices[invoiceIndex].invoiceDate,
+      items: calculatedItems,
+      subtotal,
+      discount: discountAmount,
+      tax: taxAmount,
+      total,
+      updatedAt: new Date().toISOString()
+    };
+
+    saveInvoices(invoices);
+
+    res.json(invoices[invoiceIndex]);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Failed to update invoice"
+    });
+  }
+};
+
 module.exports = {
   createInvoice,
   getInvoices,
   getInvoiceById,
-  deleteInvoice
+  deleteInvoice,
+  updateInvoice,
 };

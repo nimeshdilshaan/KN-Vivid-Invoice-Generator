@@ -1,9 +1,53 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import API from "../services/api";
 
 const CreateInvoice = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+
+  const isEditMode = Boolean(id);
+
+  useEffect(() => {
+  if (!id) return;
+
+  const loadInvoice = async () => {
+    try {
+      const response = await API.get(`/invoices/${id}`);
+
+      const invoice = response.data;
+
+      setForm({
+        customerName: invoice.customerName || "",
+        customerEmail: invoice.customerEmail || "",
+        customerPhone: invoice.customerPhone || "",
+        customerAddress: invoice.customerAddress || "",
+        invoiceDate: invoice.invoiceDate
+          ? new Date(invoice.invoiceDate)
+              .toISOString()
+              .split("T")[0]
+          : "",
+        discount: invoice.discount || 0,
+        tax: invoice.tax || 0
+      });
+
+      setItems(
+        invoice.items.map((item) => ({
+          description: item.description || "",
+          quantity: item.quantity || 1,
+          price: item.price || 0
+        }))
+      );
+    } catch (error) {
+      setError(
+        error.response?.data?.message ||
+          "Failed to load invoice"
+      );
+    }
+  };
+
+  loadInvoice();
+}, [id]);
 
   const [form, setForm] = useState({
     customerName: "",
@@ -76,60 +120,83 @@ const CreateInvoice = () => {
 
   const total = subtotal - discount + tax;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    setError("");
+  setError("");
 
-    if (!form.customerName.trim()) {
-      setError("Customer name is required");
-      return;
-    }
+  if (!form.customerName.trim()) {
+    setError("Customer name is required");
+    return;
+  }
 
-    const validItems = items.filter(
-      (item) =>
-        item.description.trim() &&
-        Number(item.quantity) > 0 &&
-        Number(item.price) >= 0
+  const validItems = items.filter(
+    (item) =>
+      item.description.trim() &&
+      Number(item.quantity) > 0 &&
+      Number(item.price) >= 0
+  );
+
+  if (validItems.length === 0) {
+    setError(
+      "Please add at least one valid invoice item"
     );
+    return;
+  }
 
-    if (validItems.length === 0) {
-      setError(
-        "Please add at least one valid invoice item"
+  try {
+    setLoading(true);
+
+    let response;
+
+    if (isEditMode) {
+      response = await API.put(
+        `/invoices/${id}`,
+        {
+          ...form,
+          items: validItems
+        }
       );
-      return;
-    }
 
-    try {
-      setLoading(true);
-
-      const response = await API.post("/invoices", {
-        ...form,
-        items: validItems
-      });
+      alert(
+        `Invoice ${response.data.invoiceNumber} updated successfully!`
+      );
+    } else {
+      response = await API.post(
+        "/invoices",
+        {
+          ...form,
+          items: validItems
+        }
+      );
 
       alert(
         `Invoice ${response.data.invoiceNumber} created successfully!`
       );
-
-      navigate("/invoices");
-    } catch (error) {
-      setError(
-        error.response?.data?.message ||
-          "Failed to create invoice"
-      );
-    } finally {
-      setLoading(false);
     }
-  };
+
+    navigate("/invoices");
+  } catch (error) {
+    setError(
+      error.response?.data?.message ||
+        "Failed to save invoice"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="invoice-page">
 
       <div className="invoice-header">
         <div>
-          <h1>Create Invoice</h1>
-          <p>Create a new professional invoice</p>
+          <h1>{isEditMode ? "Edit Invoice" : "Create Invoice"}</h1>
+          <p>
+  {isEditMode
+    ? "Update your invoice details"
+    : "Create a new professional invoice"}
+</p>
         </div>
 
         <button
@@ -337,15 +404,17 @@ const CreateInvoice = () => {
 
         </section>
 
-        <button
-          type="submit"
-          className="primary-button save-invoice-button"
-          disabled={loading}
-        >
-          {loading
-            ? "Saving Invoice..."
-            : "Save Invoice"}
-        </button>
+<button
+  type="submit"
+  className="primary-button save-invoice-button"
+  disabled={loading}
+>
+  {loading
+    ? "Saving..."
+    : isEditMode
+      ? "Update Invoice"
+      : "Save Invoice"}
+</button>
 
       </form>
     </div>

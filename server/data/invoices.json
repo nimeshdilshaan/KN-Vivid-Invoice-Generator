@@ -34,15 +34,16 @@
       {
         "description": "post",
         "quantity": 1,
-        "price": 650,
-        "total": 650
+        "price": 6500,
+        "total": 6500
       }
     ],
-    "subtotal": 650,
+    "subtotal": 6500,
     "discount": 0,
     "tax": 0,
-    "total": 650,
+    "total": 6500,
     "createdBy": "1789987732908",
-    "createdAt": "2026-09-21T11:10:46.070Z"
+    "createdAt": "2026-09-21T11:10:46.070Z",
+    "updatedAt": "2026-09-21T11:36:46.587Z"
   }
 ]
