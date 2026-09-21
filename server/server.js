@@ -6,18 +6,29 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Test route
+// Test
 app.get("/", (req, res) => {
   res.json({
     message: "KN Vivid Invoice Generator API is running"
   });
 });
 
-// Auth routes
-app.use("/api/auth", require("./routes/authRoutes"));
+// Authentication
+app.use(
+  "/api/auth",
+  require("./routes/authRoutes")
+);
+
+// Invoices
+app.use(
+  "/api/invoices",
+  require("./routes/invoiceRoutes")
+);
 
 const PORT = 5001;
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(
+    `Server running on http://localhost:${PORT}`
+  );
 });
