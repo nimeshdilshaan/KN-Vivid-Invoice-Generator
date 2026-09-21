@@ -43,13 +43,7 @@ const readCounter = () => {
   if (!fs.existsSync(counterFile)) {
     fs.writeFileSync(
       counterFile,
-      JSON.stringify(
-        {
-          currentNumber: 800
-        },
-        null,
-        2
-      )
+      JSON.stringify({}, null, 2)
     );
   }
 
@@ -58,9 +52,7 @@ const readCounter = () => {
     "utf-8"
   );
 
-  return data
-    ? JSON.parse(data)
-    : { currentNumber: 800 };
+  return data ? JSON.parse(data) : {};
 };
 
 const saveCounter = (counter) => {
@@ -85,15 +77,32 @@ const formatInvoiceNumber = (number) => {
 // GET CURRENT INVOICE NUMBER
 // ==============================
 
-const getCurrentInvoiceNumber = (req, res) => {
+const getCurrentInvoiceNumber = (
+  req,
+  res
+) => {
   try {
     const counter = readCounter();
 
+    const userId = req.user.userId;
+
+    // First-time user starts from 800
+    if (!counter[userId]) {
+      counter[userId] = 800;
+
+      saveCounter(counter);
+    }
+
+    const currentNumber =
+      counter[userId];
+
     res.json({
-      currentNumber: counter.currentNumber,
-      invoiceNumber: formatInvoiceNumber(
-        counter.currentNumber
-      )
+      currentNumber,
+
+      invoiceNumber:
+        formatInvoiceNumber(
+          currentNumber
+        )
     });
   } catch (error) {
     console.error(error);
@@ -130,8 +139,18 @@ const updateCurrentInvoiceNumber = (
 
     const counter = readCounter();
 
+    const userId = req.user.userId;
+
+    // First-time user starts from 800
+    if (!counter[userId]) {
+      counter[userId] = 800;
+    }
+
+    const currentNumber =
+      counter[userId];
+
     const difference =
-      newNumber - counter.currentNumber;
+      newNumber - currentNumber;
 
     // Maximum change is +5 or -5
     if (Math.abs(difference) > 5) {
@@ -141,17 +160,21 @@ const updateCurrentInvoiceNumber = (
       });
     }
 
-    counter.currentNumber = newNumber;
+    counter[userId] = newNumber;
 
     saveCounter(counter);
 
     res.json({
       message:
         "Invoice number updated successfully",
-      currentNumber: counter.currentNumber,
-      invoiceNumber: formatInvoiceNumber(
-        counter.currentNumber
-      )
+
+      currentNumber:
+        counter[userId],
+
+      invoiceNumber:
+        formatInvoiceNumber(
+          counter[userId]
+        )
     });
   } catch (error) {
     console.error(error);
@@ -167,7 +190,10 @@ const updateCurrentInvoiceNumber = (
 // CREATE INVOICE
 // ==============================
 
-const createInvoice = (req, res) => {
+const createInvoice = (
+  req,
+  res
+) => {
   try {
     const {
       customerName,
@@ -194,20 +220,36 @@ const createInvoice = (req, res) => {
       });
     }
 
-    const invoices = readInvoices();
+    const invoices =
+      readInvoices();
 
-    // Get current counter
-    const counter = readCounter();
+    // ==============================
+    // GET USER'S COUNTER
+    // ==============================
+
+    const counter =
+      readCounter();
+
+    const userId =
+      req.user.userId;
+
+    // First-time user starts from 800
+    if (!counter[userId]) {
+      counter[userId] = 800;
+    }
 
     // Generate invoice number
     const invoiceNumber =
       formatInvoiceNumber(
-        counter.currentNumber
+        counter[userId]
       );
 
-    // Calculate items
-    const calculatedItems = items.map(
-      (item) => {
+    // ==============================
+    // CALCULATE ITEMS
+    // ==============================
+
+    const calculatedItems =
+      items.map((item) => {
         const quantity =
           Number(item.quantity);
 
@@ -217,15 +259,20 @@ const createInvoice = (req, res) => {
         return {
           description:
             item.description,
+
           quantity,
+
           price,
+
           total:
             quantity * price
         };
-      }
-    );
+      });
 
-    // Subtotal
+    // ==============================
+    // CALCULATE TOTALS
+    // ==============================
+
     const subtotal =
       calculatedItems.reduce(
         (sum, item) =>
@@ -243,6 +290,10 @@ const createInvoice = (req, res) => {
       subtotal -
       discountAmount +
       taxAmount;
+
+    // ==============================
+    // CREATE INVOICE
+    // ==============================
 
     const newInvoice = {
       id: Date.now().toString(),
@@ -264,7 +315,8 @@ const createInvoice = (req, res) => {
         invoiceDate ||
         new Date().toISOString(),
 
-      items: calculatedItems,
+      items:
+        calculatedItems,
 
       subtotal,
 
@@ -277,21 +329,31 @@ const createInvoice = (req, res) => {
       total,
 
       createdBy:
-        req.user.userId,
+        userId,
 
       createdAt:
         new Date().toISOString()
     };
 
-    invoices.push(newInvoice);
+    invoices.push(
+      newInvoice
+    );
 
-    saveInvoices(invoices);
+    saveInvoices(
+      invoices
+    );
 
-    // Increase invoice number
-    counter.currentNumber =
-      counter.currentNumber + 1;
+    // ==============================
+    // INCREASE ONLY THIS USER'S
+    // INVOICE NUMBER
+    // ==============================
 
-    saveCounter(counter);
+    counter[userId] =
+      counter[userId] + 1;
+
+    saveCounter(
+      counter
+    );
 
     res.status(201).json(
       newInvoice
@@ -310,11 +372,16 @@ const createInvoice = (req, res) => {
 // GET ALL INVOICES
 // ==============================
 
-const getInvoices = (req, res) => {
+const getInvoices = (
+  req,
+  res
+) => {
   try {
     const invoices =
       readInvoices();
 
+    // Only return invoices
+    // belonging to logged-in user
     const userInvoices =
       invoices.filter(
         (invoice) =>
@@ -328,7 +395,9 @@ const getInvoices = (req, res) => {
         new Date(a.createdAt)
     );
 
-    res.json(userInvoices);
+    res.json(
+      userInvoices
+    );
   } catch (error) {
     console.error(error);
 
@@ -367,7 +436,9 @@ const getInvoiceById = (
       });
     }
 
-    res.json(invoice);
+    res.json(
+      invoice
+    );
   } catch (error) {
     console.error(error);
 
@@ -431,6 +502,10 @@ const updateInvoice = (
       });
     }
 
+    // ==============================
+    // CALCULATE ITEMS
+    // ==============================
+
     const calculatedItems =
       items.map((item) => {
         const quantity =
@@ -442,12 +517,19 @@ const updateInvoice = (
         return {
           description:
             item.description,
+
           quantity,
+
           price,
+
           total:
             quantity * price
         };
       });
+
+    // ==============================
+    // CALCULATE TOTALS
+    // ==============================
 
     const subtotal =
       calculatedItems.reduce(
@@ -467,8 +549,18 @@ const updateInvoice = (
       discountAmount +
       taxAmount;
 
+    // ==============================
+    // UPDATE INVOICE
+    // ==============================
+
     invoices[invoiceIndex] = {
       ...invoices[invoiceIndex],
+
+      // Original invoice number
+      // is preserved
+      invoiceNumber:
+        invoices[invoiceIndex]
+          .invoiceNumber,
 
       customerName,
 
@@ -503,7 +595,9 @@ const updateInvoice = (
         new Date().toISOString()
     };
 
-    saveInvoices(invoices);
+    saveInvoices(
+      invoices
+    );
 
     res.json(
       invoices[invoiceIndex]
@@ -551,7 +645,9 @@ const deleteInvoice = (
       1
     );
 
-    saveInvoices(invoices);
+    saveInvoices(
+      invoices
+    );
 
     res.json({
       message:
@@ -567,6 +663,10 @@ const deleteInvoice = (
   }
 };
 
+// ==============================
+// EXPORT
+// ==============================
+
 module.exports = {
   createInvoice,
   getInvoices,
@@ -576,3 +676,4 @@ module.exports = {
   getCurrentInvoiceNumber,
   updateCurrentInvoiceNumber
 };
+
