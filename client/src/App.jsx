@@ -8,8 +8,10 @@ import {
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import ProtectedRoute from "./components/ProtectedRoute";
 import CreateInvoice from "./pages/CreateInvoice";
+import InvoiceHistory from "./pages/InvoiceHistory";
+
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -18,7 +20,12 @@ function App() {
 
         <Route
           path="/"
-          element={<Navigate to="/dashboard" replace />}
+          element={
+            <Navigate
+              to="/dashboard"
+              replace
+            />
+          }
         />
 
         <Route
@@ -45,6 +52,15 @@ function App() {
           element={
             <ProtectedRoute>
               <CreateInvoice />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/invoices"
+          element={
+            <ProtectedRoute>
+              <InvoiceHistory />
             </ProtectedRoute>
           }
         />
