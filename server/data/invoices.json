@@ -1,0 +1,25 @@
+[
+  {
+    "id": "1789988514932",
+    "invoiceNumber": "KN-000001",
+    "customerName": "Nimesh Dilshan",
+    "customerEmail": "nimeshdilshan126@gmail.com",
+    "customerPhone": "0763944926",
+    "customerAddress": "2CV6+4M5",
+    "invoiceDate": "2026-09-21",
+    "items": [
+      {
+        "description": "logo",
+        "quantity": 2,
+        "price": 600,
+        "total": 1200
+      }
+    ],
+    "subtotal": 1200,
+    "discount": 50,
+    "tax": 5,
+    "total": 1155,
+    "createdBy": "1789987732908",
+    "createdAt": "2026-09-21T11:01:54.932Z"
+  }
+]

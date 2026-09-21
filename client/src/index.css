@@ -192,3 +192,156 @@ input {
     padding: 25px;
   }
 }
+.invoice-page {
+  min-height: 100vh;
+  padding: 40px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.invoice-header h1 {
+  margin-bottom: 8px;
+}
+
+.invoice-header p {
+  color: #777;
+}
+
+.invoice-form {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.invoice-section {
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+}
+
+.invoice-section h2 {
+  margin-bottom: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.form-group textarea {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 13px;
+  resize: vertical;
+  font-size: 15px;
+}
+
+.section-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.section-title-row h2 {
+  margin-bottom: 0;
+}
+
+.item-row {
+  display: grid;
+  grid-template-columns: 2fr 100px 150px 150px 90px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.item-row input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.item-total {
+  font-weight: 600;
+}
+
+.delete-button {
+  border: none;
+  background: #ffe8e8;
+  color: #c62828;
+  padding: 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.totals-section {
+  max-width: 500px;
+  margin-left: auto;
+  width: 100%;
+}
+
+.total-row,
+.grand-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.total-input {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.total-input input {
+  width: 150px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+}
+
+.grand-total {
+  border-top: 2px solid #222;
+  margin-top: 10px;
+  padding-top: 18px;
+  font-size: 20px;
+}
+
+.save-invoice-button {
+  max-width: 250px;
+  margin-left: auto;
+}
+
+@media (max-width: 800px) {
+  .invoice-page {
+    padding: 20px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .item-row {
+    grid-template-columns: 1fr;
+  }
+
+  .totals-section {
+    max-width: 100%;
+  }
+
+  .save-invoice-button {
+    max-width: 100%;
+  }
+}
