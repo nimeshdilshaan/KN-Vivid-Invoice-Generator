@@ -6,11 +6,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Test route
 app.get("/", (req, res) => {
   res.json({
     message: "KN Vivid Invoice Generator API is running"
   });
 });
+
+// Auth routes
+app.use("/api/auth", require("./routes/authRoutes"));
 
 const PORT = 5001;
 
